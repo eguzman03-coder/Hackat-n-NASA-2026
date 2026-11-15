@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Compatibilidad Espacial | NASA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07090d;
+    --panel: rgba(17, 20, 27, 0.82);
+    --panel-solid: #11141b;
+    --line: rgba(255, 255, 255, 0.12);
+    --text: #f4f5f7;
+    --muted: #a9b0bc;
+    --red: #C8102E;
+    --red-hi: #E0213F;
+    --blue: #4da6ff;
+    --ok: #22c55e;
+    --mid: #f1c40f;
+    --low: #e67e22;
+    --bad: #ff5468;
+    --font-body: "Barlow", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text);
+    background:
+      radial-gradient(1100px 520px at 85% -10%, rgba(200, 16, 46, 0.16), transparent 60%),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.9)),
+      url("fondo.png") center top / cover fixed,
+      var(--bg);
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 700; margin: 0; line-height: 1.05; }
+
+  /* ---------- Encabezado ---------- */
+  .masthead {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 28px 24px 8px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .masthead img { height: 72px; width: auto; flex: none; }
+  .masthead h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); color: var(--red); letter-spacing: 0.5px; text-shadow: 0 3px 14px rgba(0, 0, 0, 0.7); }
+  .masthead p { margin: 8px 0 0; color: var(--text); max-width: 62ch; }
+
+  /* ---------- Estructura ---------- */
+  .shell {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 20px 24px 64px;
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  .controls {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 20px;
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 16px;
+  }
+  .field { margin-bottom: 20px; }
+  .field > label, .field > .label, legend.label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    padding: 0;
+  }
+  fieldset { border: 0; padding: 0; margin: 0 0 20px; min-width: 0; }
+  .hint { color: var(--muted); font-size: 0.9rem; margin: 6px 0 0; }
+
+  input[type="text"], select {
+    width: 100%;
+    font: inherit;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  select option { background: var(--panel-solid); color: var(--text); }
+  input[type="text"]::placeholder { color: var(--muted); }
+  :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .search-row { display: flex; gap: 8px; }
+  .search-row input { flex: 1; min-width: 0; }
+
+  button { font: inherit; cursor: pointer; }
+  .btn {
+    background: var(--red);
+    color: #fff;
+    font-weight: 600;
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 16px;
+    transition: background-color 0.2s;
+  }
+  .btn:hover:not(:disabled) { background: var(--red-hi); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.ghost { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line); }
+  .btn.ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.16); }
+  .btn.wide { width: 100%; padding: 13px 16px; font-size: 1.05rem; }
+
+  /* Selector de destino */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label {
+    text-align: center;
+    padding: 10px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .seg input:checked + label { background: var(--red); border-color: var(--red); }
+  .seg input:focus-visible + label { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .checks label { display: flex; align-items: center; gap: 10px; padding: 4px 0; cursor: pointer; }
+  .checks input { accent-color: var(--red); width: 18px; height: 18px; }
+
+  .status { min-height: 1.4em; margin: 14px 0 0; font-size: 0.92rem; color: var(--muted); }
+  .status.error { color: var(--bad); }
+
+  /* ---------- Pestañas ---------- */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 24px; flex-wrap: wrap; }
+  .tabs button {
+    background: none;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    color: var(--muted);
+    padding: 10px 16px;
+    font-weight: 600;
+  }
+  .tabs button[aria-selected="true"] { color: #fff; border-bottom-color: var(--red); }
+  .tabs button:hover { color: #fff; }
+
+  /* ---------- Contenido ---------- */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
+  }
+  .empty { text-align: center; padding: 56px 28px; }
+  .empty h2 { font-size: 2.2rem; margin-bottom: 10px; }
+  .empty p { color: #ddd; max-width: 56ch; margin: 0 auto; font-size: 1.1rem; }
+
+  .block-title { font-size: 1.7rem; margin: 36px 0 14px; }
+  .block-title:first-child { margin-top: 0; }
+
+  .notice {
+    border: 1px solid rgba(241, 196, 15, 0.5);
+    background: rgba(241, 196, 15, 0.08);
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+  }
+  .notice.muted { border-color: var(--line); background: rgba(255, 255, 255, 0.04); color: var(--muted); }
+
+  .two-col { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 28px; align-items: start; }
+
+  /* Radar */
+  .radar { width: 100%; height: auto; display: block; }
+  .radar .grow { transform-origin: 50% 50%; transform-box: view-box; animation: grow 0.6s ease-out both; }
+  @keyframes grow { from { opacity: 0; transform: scale(0.55); } to { opacity: 1; transform: scale(1); } }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 10px 0 0; padding: 0; list-style: none; font-size: 0.92rem; }
+  .legend li { display: flex; align-items: center; gap: 8px; }
+  .swatch { width: 22px; height: 0; border-top: 3px solid; }
+  .swatch.dot { border-top-style: dotted; }
+
+  /* Veredicto */
+  .verdict {
+    background: var(--panel-solid);
+    border: 1px solid var(--line);
+    border-left: 8px solid var(--red);
+    border-radius: 14px;
+    padding: 24px 26px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+  .verdict .pct { font-family: var(--font-display); font-weight: 700; font-size: clamp(4rem, 9vw, 6.5rem); line-height: 0.9; }
+  .verdict .level { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; margin: 4px 0 14px; }
+  .verdict p { margin: 0 0 12px; }
+  .verdict hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
+  .verdict .faint { color: var(--muted); }
+
+  /* Ranking */
+  .rank { display: grid; gap: 10px; }
+  .rank-row { display: grid; grid-template-columns: minmax(120px, 220px) 1fr 56px; gap: 14px; align-items: center; }
+  .rank-name { overflow-wrap: anywhere; }
+  .rank-track { background: rgba(255, 255, 255, 0.07); border-radius: 6px; height: 22px; overflow: hidden; }
+  .rank-bar { height: 100%; background: #666; border-radius: 6px; }
+  .rank-row.me .rank-bar { background: var(--blue); }
+  .rank-row.me .rank-name { font-weight: 600; }
+  .rank-val { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Tablas */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+  th, td { padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  thead th { background: rgba(255, 255, 255, 0.06); font-weight: 600; }
+  td.num, th.num { font-variant-numeric: tabular-nums; }
+  td.wrap { white-space: normal; min-width: 180px; }
+
+  .map-frame { width: 100%; height: 340px; border: 1px solid var(--line); border-radius: 10px; background: #1b1f27; }
+  .actions { margin: 14px 0 0; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .links { color: var(--muted); font-size: 0.92rem; margin: 10px 0 0; }
+  .links a { color: var(--blue); }
+
+  .prose { max-width: 78ch; }
+  .prose h3 { font-size: 1.4rem; margin: 26px 0 8px; }
+  .prose h3:first-child { margin-top: 0; }
+  .prose p { margin: 0 0 12px; }
+  .prose code { background: rgba(255, 255, 255, 0.08); padding: 1px 6px; border-radius: 4px; font-size: 0.92em; }
+
+  @media (max-width: 960px) {
+    .shell { grid-template-columns: minmax(0, 1fr); }
+    .controls { position: static; }
+    .two-col { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .masthead { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .rank-row { grid-template-columns: 1fr 48px; }
+    .rank-track { grid-column: 1 / -1; grid-row: 2; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .radar .grow { animation: none; }
+    .btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e5/NASA_logo.svg" alt="Logo de la NASA" onerror="this.style.display='none'">
+  <div>
+    <h1>Compatibilidad Espacial</h1>
+    <p>Encuentra el porcentaje de similitud de los diferentes lugares de la Tierra con la Luna o Marte para encontrar análogos de exploración.</p>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="controls" aria-label="Controles del análisis">
+    <fieldset>
+      <legend class="label">Destino espacial</legend>
+      <div class="seg">
+        <input type="radio" name="destino" id="d-luna" value="Luna" checked>
+        <label for="d-luna">Luna</label>
+        <input type="radio" name="destino" id="d-marte" value="Marte">
+        <label for="d-marte">Marte</label>
+      </div>
+    </fieldset>
+
+    <form id="form-buscar" class="field" autocomplete="off">
+      <label for="consulta">Buscar un lugar</label>
+      <div class="search-row">
+        <input type="text" id="consulta" value="Atacama" placeholder="Ciudad, desierto, volcán…">
+        <button type="submit" class="btn ghost">Buscar</button>
+      </div>
+    </form>
+
+    <div class="field">
+      <label for="lugar">Resultados</label>
+      <select id="lugar" disabled><option>— Busca un lugar primero —</option></select>
+    </div>
+
+    <div class="field">
+      <label for="terreno">Terreno predominante</label>
+      <select id="terreno"></select>
+      <p class="hint" id="hint-terreno" hidden>Elige el terreno predominante: es la variable que más pesa en el índice.</p>
+    </div>
+
+    <fieldset>
+      <legend class="label">Superponer en el radar</legend>
+      <div class="checks" id="overlay"></div>
+    </fieldset>
+
+    <button type="button" class="btn wide" id="analizar" disabled>Analizar compatibilidad</button>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+  </aside>
+
+  <main>
+    <div class="tabs" role="tablist" aria-label="Secciones">
+      <button role="tab" id="tab-resultado" aria-controls="panel-resultado" aria-selected="true">Resultado</button>
+      <button role="tab" id="tab-base" aria-controls="panel-base" aria-selected="false" tabindex="-1">Base de referencia</button>
+      <button role="tab" id="tab-metodo" aria-controls="panel-metodo" aria-selected="false" tabindex="-1">Metodología</button>
+    </div>
+
+    <section id="panel-resultado" role="tabpanel" aria-labelledby="tab-resultado"></section>
+    <section id="panel-base" role="tabpanel" aria-labelledby="tab-base" hidden></section>
+    <section id="panel-metodo" role="tabpanel" aria-labelledby="tab-metodo" hidden></section>
+  </main>
+</div>
+
+<noscript><p style="text-align:center;padding:24px">Esta página necesita JavaScript para consultar los datos y calcular el índice.</p></noscript>
+
+<script>
+"use strict";
+
+/* ====================================================================
+   1. DATOS Y MODELO  (mismos valores que la versión de Python)
+   ==================================================================== */
+// <logic>
+// Severidad de la penalización por lluvia: aridez = 100 - ARIDEZ_FACTOR × precipitación (mm/día).
+// 60 = más estricto con lugares húmedos; 30 = más permisivo (Río Tinto sube, pero también lugares con lluvia moderada).
+const ARIDEZ_FACTOR = 60;
+
+const DESTINOS = {
+  "Luna":  { lat: 0.67,  lon: 23.47,  temp: -23, rango_t: 295, presion: 3e-13, dosis: 1.369, gravedad: 1.62, relieve_ideal: [150, 1500] },
+  "Marte": { lat: -4.59, lon: 137.44, temp: -59, rango_t: 80,  presion: 0.61,  dosis: 0.67,  gravedad: 3.73, relieve_ideal: [150, 1500] }
+};
+
+const GEOLOGIAS = [
+  "Basalto volcánico / lava",
+  "Desierto árido / roca expuesta",
+  "Montaña / roca alpina",
+  "Glaciar / hielo / permafrost",
+  "Suelo sedimentario / vegetación",
+  "Costa / humedal",
+  "Ácido / rico en hierro (sulfatos, hematita)",
+  "Cráter de impacto / roca fracturada"
+];
+
+const GEO_MATRIZ = {
+  "Basalto volcánico / lava":        { "Luna": 100, "Marte": 100 },
+  "Desierto árido / roca expuesta":  { "Luna": 55,  "Marte": 85 },
+  "Montaña / roca alpina":           { "Luna": 70,  "Marte": 70 },
+  "Glaciar / hielo / permafrost":    { "Luna": 40,  "Marte": 50 },
+  "Suelo sedimentario / vegetación": { "Luna": 15,  "Marte": 30 },
+  "Costa / humedal":                 { "Luna": 5,   "Marte": 10 },
+  "Ácido / rico en hierro (sulfatos, hematita)": { "Luna": 15, "Marte": 95 },
+  "Cráter de impacto / roca fracturada":         { "Luna": 90, "Marte": 80 }
+};
+
+const REFERENCIAS = {
+  "Desierto de Arizona": {
+    lat: 35.32, lon: -111.52, en_vivo: true,
+    temp: 8.2, rango_t: 16.6, elev: 2100, presion: 78.5, dosis: 0.0019, precip: 1.4,
+    uv: null, agua: null, relieve: null,
+    geologia: "Basalto volcánico / lava",
+    nota: "Clima NOAA; relieve, UV y agua en vivo."
+  },
+  "LUNA (ESA-DLR)": {
+    lat: 50.85, lon: 7.14, en_vivo: false,
+    temp: 20, rango_t: 2, elev: 60, presion: 100.6, dosis: 0.0007, uv: 0, precip: 0.0,
+    agua: false, relieve: 0, gravedad: 1.62,
+    geologia: "Basalto volcánico / lava",
+    nota: "Publicados: simulante y gravedad. Supuestos: temperatura, presión, radiación."
+  },
+  "Habitat Marte": {
+    lat: 38.41, lon: -110.79, en_vivo: true,
+    temp: 12, rango_t: 20, elev: 1400, presion: 85.6, dosis: 0.0013, precip: 0.38,
+    uv: null, agua: null, relieve: null,
+    geologia: "Desierto árido / roca expuesta",
+    nota: "MDRS, Hanksville, Utah."
+  }
+};
+
+const CATEGORIAS = ["Temperatura", "Amplitud térmica", "Presión", "Radiación", "Gravedad", "Aridez/Agua", "Relieve", "Geología"];
+// Gravedad y presión terrestres no se pueden replicar en ningún sitio real: peso 0.
+const PESOS = {
+  "Temperatura": 0.5, "Amplitud térmica": 0.5, "Presión": 0.0, "Radiación": 1.0,
+  "Gravedad": 0.0, "Aridez/Agua": 1.5, "Relieve": 1.0, "Geología": 2.0
+};
+const CATS_INDICE = CATEGORIAS.filter(c => PESOS[c] > 0);
+
+// Si el valor del destino no existe en la Tierra, se compara con el valor terrestre más cercano.
+const ALCANCE_TERRESTRE = {
+  temp: [-55, 45],
+  rango_t: [0, 30],
+  dosis: [0.0007, 0.04]
+};
+
+function lineal(a, b, tol) {
+  if (a == null || b == null) return null;
+  return Math.max(0, 100 * (1 - Math.abs(a - b) / tol));
+}
+function logaritmico(a, b, decadas, piso) {
+  if (a == null || b == null) return null;
+  return Math.max(0, 100 * (1 - Math.abs(Math.log10(Math.max(a, piso)) - Math.log10(Math.max(b, piso))) / decadas));
+}
+function objetivoTerrestre(valor, clave) {
+  const [lo, hi] = ALCANCE_TERRESTRE[clave];
+  return Math.min(Math.max(valor, lo), hi);
+}
+
+function puntuar(s, destino) {
+  const t = DESTINOS[destino];
+  const sc = {
+    "Temperatura": lineal(s.temp, objetivoTerrestre(t.temp, "temp"), 90),
+    "Amplitud térmica": lineal(s.rango_t, objetivoTerrestre(t.rango_t, "rango_t"), 40),
+    "Presión": logaritmico(s.presion, t.presion, 2.5, 1e-6),
+    "Gravedad": lineal(s.gravedad == null ? 9.81 : s.gravedad, t.gravedad, 9.81),
+    "Geología": (GEO_MATRIZ[s.geologia] && GEO_MATRIZ[s.geologia][destino] != null) ? GEO_MATRIZ[s.geologia][destino] : null
+  };
+  sc["Radiación"] = logaritmico(s.dosis, objetivoTerrestre(t.dosis, "dosis"), 3, 1e-4);
+
+  if (s.precip != null) {
+    const aridez = Math.max(0, 100 - s.precip * ARIDEZ_FACTOR);
+    sc["Aridez/Agua"] = s.agua ? aridez * 0.75 : aridez;
+  } else {
+    sc["Aridez/Agua"] = null;
+  }
+
+  const r = s.relieve;
+  if (r == null) {
+    sc["Relieve"] = null;
+  } else {
+    const [lo, hi] = t.relieve_ideal;
+    if (r < lo) sc["Relieve"] = 100 * r / lo;
+    else if (r > hi) sc["Relieve"] = Math.max(0, 100 * (1 - (r - hi) / hi));
+    else sc["Relieve"] = 100;
+  }
+  return sc;
+}
+
+function puntajeGlobal(sc) {
+  let num = 0, den = 0;
+  for (const c of Object.keys(sc)) {
+    if (sc[c] != null) { num += PESOS[c] * sc[c]; den += PESOS[c]; }
+  }
+  return den ? num / den : 0;
+}
+
+function nivel(g) {
+  if (g >= 60) return ["Análogo ALTO", "#22c55e"];
+  if (g >= 40) return ["Análogo MODERADO", "#f1c40f"];
+  if (g >= 20) return ["Análogo BAJO", "#e67e22"];
+  return ["Análogo MUY BAJO", "#ff5468"];
+}
+// </logic>
+
+/* ====================================================================
+   2. APIS (se consultan desde el navegador)
+   ==================================================================== */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function fetchJSON(url, opts, ms) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), ms || 10000);
+  try {
+    const r = await fetch(url, Object.assign({}, opts, { signal: ctl.signal }));
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// OpenTopoData público permite ~1 consulta por segundo: se encolan.
+let colaTopo = Promise.resolve();
+function fetchTopo(url) {
+  const corrida = colaTopo.then(() => fetchJSON(url, {}, 12000));
+  colaTopo = corrida.catch(() => {}).then(() => sleep(1100));
+  return corrida;
+}
+
+const cache = new Map();
+function memo(clave, fn) {
+  if (cache.has(clave)) return cache.get(clave);
+  const p = fn().then(v => { if (v == null) cache.delete(clave); return v; });
+  cache.set(clave, p);
+  return p;
+}
+
+async function buscarLugares(nombre) {
+  const url = "https://geocoding-api.open-meteo.com/v1/search?" +
+    new URLSearchParams({ name: nombre, count: 5, language: "es", format: "json" });
+  const r = await fetchJSON(url, {}, 8000);
+  return (r.results || []).map(x => ({
+    etiqueta: `${x.name}, ${x.admin1 || ""} (${x.country || ""})`,
+    nombre: x.name, lat: x.latitude, lon: x.longitude
+  }));
+}
+
+function obtenerClima(lat, lon) {
+  return memo(`clima|${lat}|${lon}`, async () => {
+    try {
+      const url = "https://power.larc.nasa.gov/api/temporal/climatology/point?" + new URLSearchParams({
+        parameters: "T2M,T2M_RANGE,PRECTOTCORR", community: "RE", longitude: lon, latitude: lat, format: "JSON"
+      });
+      const p = (await fetchJSON(url, {}, 20000)).properties.parameter;
+      const v = k => (p[k].ANN === -999 ? null : p[k].ANN);
+      return { temp: v("T2M"), rango_t: v("T2M_RANGE"), precip: v("PRECTOTCORR") };
+    } catch (e) { return null; }
+  });
+}
+
+function obtenerElevacion(lat, lon) {
+  return memo(`elev|${lat}|${lon}`, async () => {
+    try {
+      const r = await fetchJSON(`https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`, {}, 8000);
+      if (r.elevation && r.elevation[0] != null) return r.elevation[0];
+    } catch (e) { /* se prueba la otra fuente */ }
+    try {
+      const r = await fetchTopo(`https://api.opentopodata.org/v1/srtm90m?locations=${lat},${lon}`);
+      if (r.results[0].elevation != null) return r.results[0].elevation;
+    } catch (e) { /* sin dato */ }
+    return null;
+  });
+}
+
+function obtenerRelieve(lat, lon) {
+  return memo(`relieve|${lat}|${lon}`, async () => {
+    try {
+      const paso = 0.045, pts = [];
+      for (const i of [-1, 0, 1]) for (const j of [-1, 0, 1]) pts.push(`${(lat + i * paso).toFixed(5)},${(lon + j * paso).toFixed(5)}`);
+      const r = await fetchTopo("https://api.opentopodata.org/v1/srtm90m?locations=" + encodeURIComponent(pts.join("|")));
+      const alts = r.results.map(x => x.elevation).filter(x => x != null);
+      if (alts.length >= 5) return Math.max(...alts) - Math.min(...alts);
+    } catch (e) { /* sin dato */ }
+    return null;
+  });
+}
+
+function obtenerUV(lat, lon) {
+  return memo(`uv|${lat}|${lon}`, async () => {
+    try {
+      const url = "https://api.open-meteo.com/v1/forecast?" + new URLSearchParams({
+        latitude: lat, longitude: lon, daily: "uv_index_clear_sky_max", timezone: "auto", forecast_days: 7
+      });
+      const r = await fetchJSON(url, {}, 8000);
+      const vals = r.daily.uv_index_clear_sky_max.filter(x => x != null);
+      return vals.length ? Math.max(...vals) : null;
+    } catch (e) { return null; }
+  });
+}
+
+function buscarAgua(lat, lon) {
+  return memo(`agua|${lat}|${lon}`, async () => {
+    try {
+      const q = `[out:json][timeout:10];(way["natural"="water"](around:10000,${lat},${lon});way["natural"="coastline"](around:10000,${lat},${lon}););out count;`;
+      const r = await fetchJSON("https://overpass-api.de/api/interpreter", { method: "POST", body: new URLSearchParams({ data: q }) }, 14000);
+      return parseInt(r.elements[0].tags.total, 10) > 0;
+    } catch (e) { return null; }
+  });
+}
+
+async function construirSitio(lugar, geologia) {
+  const { lat, lon } = lugar;
+  const [clima, elev, relieve, uv, agua] = await Promise.all([
+    obtenerClima(lat, lon), obtenerElevacion(lat, lon), obtenerRelieve(lat, lon), obtenerUV(lat, lon), buscarAgua(lat, lon)
+  ]);
+  const fallos = [];
+  if (!clima) fallos.push("NASA POWER (clima)");
+  if (elev == null) fallos.push("elevación");
+  if (relieve == null) fallos.push("OpenTopoData (relieve)");
+  if (uv == null) fallos.push("Open-Meteo (UV)");
+  if (agua == null) fallos.push("OpenStreetMap (agua)");
+  let presion = null, dosis = null;
+  if (elev != null) {
+    const h = Math.max(elev, 0);
+    presion = 101.325 * Math.pow(1 - 2.25577e-5 * h, 5.25588);
+    dosis = 0.0007 * Math.pow(2, h / 1500);
+  }
+  return {
+    nombre: lugar.nombre, lat, lon,
+    temp: clima ? clima.temp : null, rango_t: clima ? clima.rango_t : null, precip: clima ? clima.precip : null,
+    elev, presion, dosis, uv, agua, relieve, geologia, fallos
+  };
+}
+
+/* ====================================================================
+   3. ESTADO
+   ==================================================================== */
+const state = {
+  destino: "Luna",
+  candidatos: [],
+  sitio: null,
+  refs: JSON.parse(JSON.stringify(REFERENCIAS)),
+  overlay: new Set(["Desierto de Arizona"]),
+  refsPromise: null
+};
+
+async function cargarReferenciasVivo() {
+  for (const [n, r] of Object.entries(REFERENCIAS)) {
+    if (!r.en_vivo) continue;
+    const v = await construirSitio({ nombre: n, lat: r.lat, lon: r.lon }, r.geologia);
+    for (const k of ["temp", "rango_t", "precip", "elev", "presion", "dosis", "uv", "agua", "relieve"]) {
+      if (v[k] != null) state.refs[n][k] = v[k];
+    }
+    renderBase();
+    if (state.sitio) renderResultado();
+  }
+}
+
+/* ====================================================================
+   4. UTILIDADES DE INTERFAZ
+   ==================================================================== */
+const $ = sel => document.querySelector(sel);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const f1 = v => v.toFixed(1);
+const f0 = v => v.toFixed(0);
+const f2 = v => v.toFixed(2);
+const g3 = v => String(Number(v.toPrecision(3)));
+const fmt = (v, f) => (v == null ? "s/d" : f(v));
+const siNo = v => (v === true ? "Sí" : v === false ? "No" : "s/d");
+
+function setStatus(texto, error) {
+  const el = $("#status");
+  el.textContent = texto || "";
+  el.classList.toggle("error", !!error);
+}
+
+/* ====================================================================
+   5. RADAR (SVG)
+   ==================================================================== */
+function radarSVG(series, destino) {
+  const W = 560, H = 470, cx = W / 2, cy = H / 2, R = 160, n = CATS_INDICE.length;
+  const ang = i => -Math.PI / 2 + i * 2 * Math.PI / n;
+  const pt = (i, v) => [cx + R * (v / 100) * Math.cos(ang(i)), cy + R * (v / 100) * Math.sin(ang(i))];
+  const poly = vals => vals.map((v, i) => pt(i, v).map(x => x.toFixed(1)).join(",")).join(" ");
+
+  let svg = `<svg class="radar" viewBox="0 0 ${W} ${H}" role="img" aria-label="Gráfico de radar del índice de compatibilidad con ${esc(destino)}">`;
+
+  for (const nivelAnillo of [25, 50, 75, 100]) {
+    svg += `<polygon points="${poly(CATS_INDICE.map(() => nivelAnillo))}" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>`;
+    svg += `<text x="${cx + 5}" y="${(cy - R * nivelAnillo / 100 + 12).toFixed(1)}" fill="#a9b0bc" font-size="11">${nivelAnillo}</text>`;
+  }
+  CATS_INDICE.forEach((c, i) => {
+    const [x, y] = pt(i, 100);
+    svg += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(255,255,255,0.14)"/>`;
+    const lx = cx + (R + 20) * Math.cos(ang(i)), ly = cy + (R + 20) * Math.sin(ang(i));
+    const co = Math.cos(ang(i)), si = Math.sin(ang(i));
+    const anchor = co > 0.25 ? "start" : co < -0.25 ? "end" : "middle";
+    const dy = si > 0.6 ? 12 : si < -0.6 ? -4 : 4;
+    svg += `<text x="${lx.toFixed(1)}" y="${(ly + dy).toFixed(1)}" text-anchor="${anchor}" fill="#f4f5f7" font-size="14">${esc(c)}</text>`;
+  });
+
+  series.forEach(s => {
+    const dash = s.dash ? ' stroke-dasharray="2 5" stroke-linecap="round"' : "";
+    const fill = s.fill || "none";
+    const cls = s.grow ? ' class="grow"' : "";
+    svg += `<g${cls}><polygon points="${poly(s.vals)}" fill="${fill}" stroke="${s.color}" stroke-width="2.2"${dash}/>`;
+    if (!s.dash) {
+      s.vals.forEach((v, i) => {
+        const [x, y] = pt(i, v);
+        svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.6" fill="${s.color}"><title>${esc(s.name)} · ${esc(CATS_INDICE[i])}: ${v.toFixed(0)}</title></circle>`;
+      });
+    }
+    svg += `</g>`;
+  });
+  svg += `</svg>`;
+
+  svg += `<ul class="legend">` + series.map(s =>
+    `<li><span class="swatch${s.dash ? " dot" : ""}" style="border-color:${s.color}"></span>${esc(s.name)}</li>`).join("") + `</ul>`;
+  return svg;
+}
+
+/* ====================================================================
+   6. VEREDICTO
+   ==================================================================== */
+function veredictoHTML(sitio, destino, sc, glob, ranking) {
+  const [etiqueta, color] = nivel(glob);
+  const fuertes = Object.entries(sc).filter(([c, v]) => v != null && PESOS[c] > 0 && v >= 60).sort((a, b) => b[1] - a[1]);
+  const debiles = Object.entries(sc).filter(([c, v]) => v != null && PESOS[c] > 0 && v <= 30).sort((a, b) => a[1] - b[1]);
+  const sinDato = Object.entries(sc).filter(([, v]) => v == null).map(([c]) => c);
+
+  let h = `<div class="pct" style="color:${color}">${glob.toFixed(0)}%</div>`;
+  h += `<div class="level" style="color:${color}">${esc(etiqueta)}</div>`;
+  h += `<p><strong>${esc(sitio.nombre)}</strong> frente a <strong>${esc(destino)}</strong>.</p>`;
+  if (fuertes.length) h += `<p><strong>Coincide en:</strong> ${fuertes.slice(0, 3).map(([c, v]) => `${esc(c)} (${v.toFixed(0)})`).join(", ")}</p>`;
+  if (debiles.length) h += `<p><strong>No coincide en:</strong> ${debiles.slice(0, 4).map(([c, v]) => `${esc(c)} (${v.toFixed(0)})`).join(", ")}</p>`;
+
+  const otros = ranking.filter(([n]) => n !== sitio.nombre);
+  const supera = otros.filter(([, v]) => v < glob).map(([n]) => n);
+  h += supera.length
+    ? `<p><strong>Supera a:</strong> ${supera.map(esc).join(", ")}</p>`
+    : `<p>No supera a ninguno de los análogos de la base de referencia.</p>`;
+  if (otros.length) {
+    const mejor = otros.reduce((a, b) => (b[1] > a[1] ? b : a));
+    h += `<p>Mejor análogo de referencia: <strong>${esc(mejor[0])}</strong> (${mejor[1].toFixed(0)}%).</p>`;
+  }
+  h += `<hr><p><strong>Límites inevitables:</strong> la gravedad terrestre y la presión atmosférica no pueden replicarse en sitios reales, por eso no entran en el índice.</p>`;
+  if (sinDato.length) h += `<p class="faint">Sin datos para: ${sinDato.map(esc).join(", ")}.</p>`;
+  return `<div class="verdict" style="border-left-color:${color}">${h}</div>`;
+}
+
+/* ====================================================================
+   7. RESULTADOS
+   ==================================================================== */
+const FILAS = [
+  ["Temperatura media (°C)", "temp", f1],
+  ["Amplitud térmica diaria (°C)", "rango_t", f1],
+  ["Elevación (m)", "elev", f0],
+  ["Presión (kPa)", "presion", g3],
+  ["Dosis de radiación (mSv/día)", "dosis", g3],
+  ["Índice UV máx.", "uv", f1],
+  ["Precipitación (mm/día)", "precip", f2],
+  ["Relieve en ~10 km (m)", "relieve", f0]
+];
+
+function construirTabla(sitio, destino) {
+  const t = DESTINOS[destino];
+  const nombres = Object.keys(state.refs);
+  const cabecera = ["Variable", destino, sitio.nombre].concat(nombres);
+  const filas = FILAS.map(([etq, k, f]) => {
+    const dest = Object.prototype.hasOwnProperty.call(t, k) ? fmt(t[k], f) : "—";
+    return [etq, dest, fmt(sitio[k], f)].concat(nombres.map(n => fmt(state.refs[n][k], f)));
+  });
+  filas.push(["Agua a 10 km", "Sí (polos/subsuelo)", siNo(sitio.agua)].concat(nombres.map(n => siNo(state.refs[n].agua))));
+  filas.push(["Terreno", "—", sitio.geologia].concat(nombres.map(n => state.refs[n].geologia)));
+  return { cabecera, filas };
+}
+
+function tablaHTML(cabecera, filas) {
+  const th = cabecera.map((c, i) => `<th${i ? ' class="num"' : ""}>${esc(c)}</th>`).join("");
+  const tr = filas.map(f => `<tr>${f.map((c, i) => `<td${i === 0 ? "" : i === f.length ? "" : ' class="num"'}>${esc(c)}</td>`).join("")}</tr>`).join("");
+  return `<div class="table-wrap"><table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+}
+
+function descargarCSV(cabecera, filas, nombreArchivo) {
+  const celda = c => `"${String(c).replace(/"/g, '""')}"`;
+  const texto = [cabecera].concat(filas).map(r => r.map(celda).join(",")).join("\r\n");
+  const blob = new Blob(["\ufeff" + texto], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nombreArchivo;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function renderResultado() {
+  const root = $("#panel-resultado");
+  const sitio = state.sitio;
+  if (!sitio) {
+    root.innerHTML = `<div class="card empty"><h2>Inicia tu análisis</h2>
+      <p>Elige Luna o Marte, busca una ciudad, desierto o volcán y marca el terreno predominante. Luego presiona <strong>Analizar compatibilidad</strong>.</p></div>`;
+    return;
+  }
+  const destino = state.destino;
+  const scSitio = puntuar(sitio, destino);
+  const glob = puntajeGlobal(scSitio);
+
+  const ranking = [[sitio.nombre, glob]];
+  const scRefs = {};
+  for (const [n, r] of Object.entries(state.refs)) {
+    scRefs[n] = puntuar(r, destino);
+    ranking.push([n, puntajeGlobal(scRefs[n])]);
+  }
+  ranking.sort((a, b) => b[1] - a[1]);
+
+  let avisos = "";
+  if (sitio.geologia === "Desierto árido / roca expuesta" && (sitio.precip || 0) >= 1.5) {
+    avisos += `<div class="notice">Elegiste terreno desértico, pero la precipitación de este lugar es ${sitio.precip.toFixed(1)} mm/día, algo poco propio de un desierto. Revisa el terreno elegido: es la variable que más pesa en el índice.</div>`;
+  }
+  if (sitio.fallos && sitio.fallos.length) {
+    avisos += `<div class="notice muted">Fuentes que no respondieron: ${sitio.fallos.map(esc).join(", ")}. Esas variables quedan fuera del índice.</div>`;
+  }
+
+  const paleta = ["#ffffff", "#f1c40f", "#9aa5b1"];
+  const series = [
+    { name: `Objetivo: ${destino}`, color: "#C8102E", fill: "rgba(200,16,46,0.12)", vals: CATS_INDICE.map(() => 100) },
+    { name: sitio.nombre, color: "#4da6ff", fill: "rgba(77,166,255,0.25)", vals: CATS_INDICE.map(c => scSitio[c] == null ? 0 : scSitio[c]), grow: true }
+  ];
+  Object.keys(state.refs).filter(n => state.overlay.has(n)).forEach((n, i) => {
+    series.push({ name: n, color: paleta[i % paleta.length], dash: true, vals: CATS_INDICE.map(c => scRefs[n][c] == null ? 0 : scRefs[n][c]) });
+  });
+
+  const maxVal = Math.max(100, ...ranking.map(r => r[1]));
+  const rank = ranking.map(([n, v]) => `
+    <div class="rank-row${n === sitio.nombre ? " me" : ""}">
+      <div class="rank-name">${esc(n)}</div>
+      <div class="rank-track"><div class="rank-bar" style="width:${(v / maxVal * 100).toFixed(1)}%"></div></div>
+      <div class="rank-val">${v.toFixed(0)}%</div>
+    </div>`).join("");
+
+  const { cabecera, filas } = construirTabla(sitio, destino);
+
+  const d = 0.25;
+  const mapaURL = `https://www.openstreetmap.org/export/embed.html?bbox=${(sitio.lon - d).toFixed(4)},${(sitio.lat - d * 0.6).toFixed(4)},${(sitio.lon + d).toFixed(4)},${(sitio.lat + d * 0.6).toFixed(4)}&layer=mapnik&marker=${sitio.lat},${sitio.lon}`;
+  const enlaces = [[sitio.nombre, sitio.lat, sitio.lon]].concat(Object.entries(state.refs).map(([n, r]) => [n, r.lat, r.lon]))
+    .map(([n, la, lo]) => `<a href="https://www.openstreetmap.org/?mlat=${la}&mlon=${lo}#map=9/${la}/${lo}" target="_blank" rel="noopener">${esc(n)}</a>`).join(" · ");
+
+  root.innerHTML = `
+    ${avisos}
+    <div class="two-col">
+      <div>
+        <h2 class="block-title">${esc(sitio.nombre)} vs. ${esc(destino)}</h2>
+        ${radarSVG(series, destino)}
+      </div>
+      <div>
+        <h2 class="block-title">Veredicto</h2>
+        ${veredictoHTML(sitio, destino, scSitio, glob, ranking)}
+      </div>
+    </div>
+
+    <h2 class="block-title">Ranking de análogos</h2>
+    <div class="rank">${rank}</div>
+
+    <h2 class="block-title">Datos medidos</h2>
+    ${tablaHTML(cabecera, filas)}
+    <div class="actions"><button type="button" class="btn ghost" id="btn-csv">Descargar comparación (CSV)</button></div>
+
+    <h2 class="block-title">Ubicaciones</h2>
+    <iframe class="map-frame" title="Mapa con la ubicación de ${esc(sitio.nombre)}" loading="lazy" src="${mapaURL}"></iframe>
+    <p class="links">Abrir en el mapa: ${enlaces}</p>
+  `;
+
+  $("#btn-csv").addEventListener("click", () => {
+    const seguro = s => String(s).replace(/[^\wáéíóúñÁÉÍÓÚÑ-]+/g, "_");
+    descargarCSV(cabecera, filas, `analogo_${seguro(sitio.nombre)}_${destino}.csv`);
+  });
+}
+
+/* ====================================================================
+   8. BASE DE REFERENCIA Y METODOLOGÍA
+   ==================================================================== */
+function renderBase() {
+  const dCols = [["lat", "Latitud", f2], ["lon", "Longitud", f2], ["temp", "Temp. (°C)", f1], ["rango_t", "Amplitud (°C)", f1],
+                 ["presion", "Presión (kPa)", g3], ["dosis", "Dosis (mSv/día)", g3], ["gravedad", "Gravedad (m/s²)", f2]];
+  const dFilas = Object.entries(DESTINOS).map(([n, d]) => [n].concat(dCols.map(([k, , f]) => fmt(d[k], f))));
+  const rCols = [["lat", "Latitud", f2], ["lon", "Longitud", f2], ["temp", "Temp. (°C)", f1], ["rango_t", "Amplitud (°C)", f1],
+                 ["elev", "Elevación (m)", f0], ["presion", "Presión (kPa)", g3], ["dosis", "Dosis (mSv/día)", g3], ["uv", "UV máx.", f1],
+                 ["precip", "Precip. (mm/día)", f2], ["relieve", "Relieve (m)", f0]];
+  const rFilas = Object.entries(state.refs).map(([n, r]) =>
+    [n].concat(rCols.map(([k, , f]) => fmt(r[k], f))).concat([siNo(r.agua), r.geologia, r.nota]));
+
+  $("#panel-base").innerHTML = `
+    <div class="card">
+      <h2 class="block-title">Base de datos de referencia</h2>
+      <h3 style="margin:0 0 10px;font-size:1.25rem">Destinos</h3>
+      ${tablaHTML(["Destino"].concat(dCols.map(c => c[1])), dFilas)}
+      <h3 style="margin:28px 0 10px;font-size:1.25rem">Análogos de referencia</h3>
+      ${tablaHTML(["Análogo"].concat(rCols.map(c => c[1])).concat(["Agua a 10 km", "Terreno", "Nota"]), rFilas)}
+      <p class="hint">Los análogos marcados como “en vivo” (Arizona y Marte-MDRS) actualizan sus valores con las mismas fuentes que el lugar que analizas.</p>
+    </div>`;
+}
+
+function renderMetodologia() {
+  $("#panel-metodo").innerHTML = `
+    <div class="card prose">
+      <h3>Qué mide el índice (0-100%)</h3>
+      <p>Mide la similitud <em>ambiental</em> entre un lugar de la Tierra y la Luna o Marte. Cada variable recibe un puntaje de 0 a 100 y el índice final es el promedio ponderado de las variables que tienen dato.</p>
+      <p><strong>Comparación con lo que existe en la Tierra:</strong> si el valor del destino no existe en ningún lugar terrestre (por ejemplo, 295 °C de amplitud térmica en la Luna), el lugar se compara con el valor terrestre más cercano. Así el índice responde a “¿qué tan bien aproxima este sitio al destino, dentro de lo que la Tierra permite?”.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Variable</th><th>Fuente</th><th>Regla</th><th class="num">Peso</th></tr></thead>
+        <tbody>
+          <tr><td>Geología</td><td>Selección del usuario</td><td>Matriz de similitud</td><td class="num">2.0</td></tr>
+          <tr><td>Aridez/Agua</td><td>NASA POWER + OpenStreetMap</td><td class="wrap"><code>100 − ${ARIDEZ_FACTOR} × precipitación (mm/día)</code>; × 0.75 si hay agua a 10 km</td><td class="num">1.5</td></tr>
+          <tr><td>Radiación</td><td>Estimada por altitud</td><td>Logarítmica, 3 décadas</td><td class="num">1.0</td></tr>
+          <tr><td>Relieve</td><td>OpenTopoData SRTM</td><td>Banda ideal 150-1500 m</td><td class="num">1.0</td></tr>
+          <tr><td>Temperatura</td><td>NASA POWER</td><td>Lineal, tolerancia 90 °C</td><td class="num">0.5</td></tr>
+          <tr><td>Amplitud térmica</td><td>NASA POWER</td><td>Lineal, tolerancia 40 °C</td><td class="num">0.5</td></tr>
+          <tr><td>Presión</td><td>Calculada desde la elevación</td><td>Logarítmica (solo informativa)</td><td class="num">0</td></tr>
+          <tr><td>Gravedad</td><td>Constante terrestre</td><td>Lineal (solo informativa)</td><td class="num">0</td></tr>
+        </tbody>
+      </table></div>
+      <p style="margin-top:14px">La presión y la gravedad terrestres no pueden replicarse en ningún sitio real, por eso se muestran en los datos pero no entran en el índice.</p>
+      <h3>Niveles</h3>
+      <p>ALTO ≥ 60 · MODERADO ≥ 40 · BAJO ≥ 20 · MUY BAJO &lt; 20.</p>
+      <h3>Limitaciones</h3>
+      <p>Los valores de la Luna, Marte y de los análogos de referencia son aproximados. El índice no mide mineralogía ni química (salvo a través del tipo de terreno elegido). La radiación se estima solo por altitud. Los pesos y umbrales son decisiones de diseño, calibradas con análogos conocidos, y no una medida científica absoluta.</p>
+    </div>`;
+}
+
+/* ====================================================================
+   9. EVENTOS
+   ==================================================================== */
+function actualizarBoton() {
+  const hayLugar = state.candidatos.length > 0 && !$("#lugar").disabled;
+  const hayTerreno = $("#terreno").value !== "";
+  $("#analizar").disabled = !(hayLugar && hayTerreno);
+  $("#hint-terreno").hidden = !(hayLugar && !hayTerreno);
+}
+
+async function buscar() {
+  const q = $("#consulta").value.trim();
+  const sel = $("#lugar");
+  if (!q) { state.candidatos = []; sel.disabled = true; sel.innerHTML = "<option>— Busca un lugar primero —</option>"; actualizarBoton(); return; }
+  setStatus("Buscando lugares…");
+  try {
+    state.candidatos = await buscarLugares(q);
+  } catch (e) {
+    state.candidatos = [];
+    sel.disabled = true;
+    sel.innerHTML = "<option>— Sin resultados —</option>";
+    setStatus("No se pudo conectar con el buscador de lugares. Revisa tu conexión a internet e inténtalo de nuevo.", true);
+    actualizarBoton();
+    return;
+  }
+  if (!state.candidatos.length) {
+    sel.disabled = true;
+    sel.innerHTML = "<option>— Sin resultados —</option>";
+    setStatus("No se encontró ese lugar. Prueba con otro nombre o con la ciudad más cercana.", true);
+  } else {
+    sel.disabled = false;
+    sel.innerHTML = state.candidatos.map((c, i) => `<option value="${i}">${esc(c.etiqueta)}</option>`).join("");
+    setStatus("");
+  }
+  actualizarBoton();
+}
+
+async function analizar() {
+  const lugar = state.candidatos[Number($("#lugar").value)];
+  const geologia = $("#terreno").value;
+  if (!lugar || !geologia) return;
+  const boton = $("#analizar");
+  boton.disabled = true;
+  setStatus("Consultando NASA POWER, OpenTopoData y OpenStreetMap… puede tardar unos segundos.");
+  try {
+    const [sitio] = await Promise.all([construirSitio(lugar, geologia), state.refsPromise]);
+    state.sitio = sitio;
+    renderResultado();
+    seleccionarPestana("resultado");
+    setStatus("");
+    $("#panel-resultado").scrollIntoView({ block: "start" });
+  } catch (e) {
+    setStatus("Ocurrió un error inesperado al analizar el lugar. Inténtalo de nuevo.", true);
+  } finally {
+    actualizarBoton();
+  }
+}
+
+function seleccionarPestana(id) {
+  for (const t of ["resultado", "base", "metodo"]) {
+    const activa = t === id;
+    const tab = $("#tab-" + t);
+    tab.setAttribute("aria-selected", activa ? "true" : "false");
+    tab.tabIndex = activa ? 0 : -1;
+    $("#panel-" + t).hidden = !activa;
+  }
+}
+
+function iniciar() {
+  $("#terreno").innerHTML = `<option value="">— Elige el terreno —</option>` +
+    GEOLOGIAS.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("");
+
+  $("#overlay").innerHTML = Object.keys(REFERENCIAS).map((n, i) =>
+    `<label><input type="checkbox" value="${esc(n)}"${state.overlay.has(n) ? " checked" : ""}>${esc(n)}</label>`).join("");
+
+  document.querySelectorAll('input[name="destino"]').forEach(r => r.addEventListener("change", () => {
+    state.destino = r.value;
+    renderResultado();
+  }));
+  $("#overlay").addEventListener("change", e => {
+    if (e.target.checked) state.overlay.add(e.target.value); else state.overlay.delete(e.target.value);
+    renderResultado();
+  });
+  $("#form-buscar").addEventListener("submit", e => { e.preventDefault(); buscar(); });
+  $("#lugar").addEventListener("change", actualizarBoton);
+  $("#terreno").addEventListener("change", actualizarBoton);
+  $("#analizar").addEventListener("click", analizar);
+
+  const tabs = ["resultado", "base", "metodo"];
+  tabs.forEach((t, i) => {
+    const el = $("#tab-" + t);
+    el.addEventListener("click", () => seleccionarPestana(t));
+    el.addEventListener("keydown", e => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      const sig = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+      seleccionarPestana(sig);
+      $("#tab-" + sig).focus();
+    });
+  });
+
+  renderResultado();
+  renderBase();
+  renderMetodologia();
+  buscar();
+  state.refsPromise = cargarReferenciasVivo().catch(() => {});
+}
+
+iniciar();
+</script>
+</body>
+</html>
