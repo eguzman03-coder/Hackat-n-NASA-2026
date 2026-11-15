@@ -1,5 +1,4 @@
-flask
-requests
-gunicorn
+streamlit
 pandas
-numpy
+plotly
+requests
