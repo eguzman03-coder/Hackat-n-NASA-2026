@@ -22,12 +22,22 @@ import streamlit as st
 
 # Estilo
 
-def get_base64(bin_file):
-    try:
-        with open(bin_file, "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    except FileNotFoundError:
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def find_file(nombre):
+    """Busca el archivo en cualquier carpeta del proyecto, sin importar mayúsculas."""
+    for root, _, files in os.walk(BASE_DIR):
+        for f in files:
+            if f.lower() == nombre.lower():
+                return os.path.join(root, f)
+    return None
+
+def get_base64(nombre):
+    ruta = find_file(nombre)
+    if not ruta:
         return None
+    with open(ruta, "rb") as f:
+        return base64.b64encode(f.read()).decode()
 
 img_fondo = get_base64("fondo.png")
 background_css = f'url("data:image/png;base64,{img_fondo}")' if img_fondo else "none"
