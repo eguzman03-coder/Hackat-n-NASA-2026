@@ -42,7 +42,7 @@ def get_base64(nombre):
 img_fondo = get_base64("fondo.png")
 background_css = f'url("data:image/png;base64,{img_fondo}")' if img_fondo else "none"
 img_logo = get_base64("logo_nasa.png")
-
+linear-gradient(rgba(5, 5, 5, 0.35), rgba(5, 5, 5, 0.5))
 st.set_page_config(page_title="Compatibilidad Espacial | NASA", page_icon="logo_nasa.png", layout="wide")
 
 st.markdown(
