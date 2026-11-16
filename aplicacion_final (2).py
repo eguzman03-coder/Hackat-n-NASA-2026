@@ -14,6 +14,7 @@ import re
 import time
 from html import escape
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -21,7 +22,6 @@ import requests
 import streamlit as st
 
 # Estilo
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def find_file(nombre):
@@ -32,20 +32,18 @@ def find_file(nombre):
                 return os.path.join(root, f)
     return None
 
-def get_base64(nombre):
-    ruta = find_file(nombre)
-    if not ruta:
+def get_base64(bin_file):
+    try:
+        with open(bin_file, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except FileNotFoundError:
         return None
-    with open(ruta, "rb") as f:
-        return base64.b64encode(f.read()).decode()
 
 img_fondo = get_base64("fondo.png")
 background_css = f'url("data:image/png;base64,{img_fondo}")' if img_fondo else "none"
 img_logo = get_base64("logo_nasa.png")
-st.set_page_config(page_title="Compatibilidad Espacial | NASA", page_icon="logo_nasa.png", layout="wide")
 
-st.sidebar.write("fondo encontrado:", bool(img_fondo))
-st.sidebar.write("archivos:", os.listdir("."))
+st.set_page_config(page_title="Compatibilidad Espacial | NASA", page_icon="logo_nasa.png", layout="wide")
 
 st.markdown(
     f"""
@@ -347,6 +345,32 @@ def buscar_datasets_cmr(lat, lon):
     except Exception:
         pass
     return []
+
+ANIO_FIN = 2025            # último año completo
+ANIO_INI = ANIO_FIN - 19   # 20 años: 2006-2025
+
+@st.cache_data(show_spinner=False)
+def obtener_serie_anual(lat, lon, ini=ANIO_INI, fin=ANIO_FIN):
+    """Serie anual de NASA POWER (datos mensuales promediados por año)."""
+    try:
+        r = requests.get(
+            "https://power.larc.nasa.gov/api/temporal/monthly/point",
+            params={"parameters": "T2M,T2M_RANGE,PRECTOTCORR", "community": "RE",
+                    "longitude": lon, "latitude": lat, "start": ini, "end": fin, "format": "JSON"},
+            timeout=30,
+        ).json()["properties"]["parameter"]
+    except Exception:
+        return None
+    filas = []
+    for anio in range(ini, fin + 1):
+        fila = {"Año": anio}
+        for var in ("T2M", "T2M_RANGE", "PRECTOTCORR"):
+            meses = [r[var].get(f"{anio}{m:02d}") for m in range(1, 13)]
+            meses = [v for v in meses if v is not None and v != -999]
+            fila[var] = sum(meses) / len(meses) if len(meses) >= 6 else None
+        filas.append(fila)
+    df = pd.DataFrame(filas)
+    return df if df[["T2M", "T2M_RANGE", "PRECTOTCORR"]].notna().any().any() else None
 
 def construir_sitio(lugar, geologia):
     lat, lon = lugar["lat"], lugar["lon"]
@@ -676,6 +700,57 @@ with tab_res:
         st.plotly_chart(fig2, use_container_width=True)
 
         # Perfiles más parecidos: usa las mismas variables y pesos del índice
+        # --- NUEVO: comparación de las últimas dos décadas ---
+        st.subheader(f"Últimos 20 años ({ANIO_INI}–{ANIO_FIN}): {sitio['nombre']} frente a los análogos")
+        VARS_SERIE = {
+            "Temperatura media (°C)": ("T2M", "temp"),
+            "Amplitud térmica diaria (°C)": ("T2M_RANGE", "rango_t"),
+            "Precipitación (mm/día)": ("PRECTOTCORR", None),
+        }
+        cs1, cs2 = st.columns([3, 2])
+        with cs1:
+            var_sel = st.radio("Variable", list(VARS_SERIE), horizontal=True, key="var_serie")
+        with cs2:
+            como_anomalia = st.checkbox("Ver como diferencia respecto al promedio del periodo", key="anom_serie")
+        col_api, clave_dest = VARS_SERIE[var_sel]
+
+        series = {sitio["nombre"]: obtener_serie_anual(sitio["lat"], sitio["lon"])}
+        for n in comparar_con:
+            series[n] = obtener_serie_anual(REFS[n]["lat"], REFS[n]["lon"])
+        series = {n: d for n, d in series.items() if d is not None and d[col_api].notna().sum() >= 5}
+
+        if not series:
+            st.info("NASA POWER no devolvió la serie histórica para estos puntos. Intenta de nuevo en un momento.")
+        else:
+            colores_serie = ["#4da6ff", "#ffffff", "#f1c40f", "#9aa5b1"]
+            figs = go.Figure()
+            tendencias = []
+            for i, (n, d) in enumerate(series.items()):
+                d = d.dropna(subset=[col_api])
+                y = d[col_api] - d[col_api].mean() if como_anomalia else d[col_api]
+                figs.add_trace(go.Scatter(
+                    x=d["Año"], y=y, mode="lines+markers", name=n,
+                    line=dict(color=colores_serie[i % 4], width=3 if i == 0 else 2,
+                              dash="solid" if i == 0 else "dot")))
+                pend = float(np.polyfit(d["Año"], d[col_api], 1)[0]) * 10
+                tendencias.append((n, pend))
+            figs.update_layout(
+                xaxis=dict(title="Año", dtick=2, gridcolor="#333"),
+                yaxis=dict(title=var_sel + (" (diferencia)" if como_anomalia else ""), gridcolor="#333", zeroline=como_anomalia),
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Helvetica, Arial, sans-serif", color="#fff"),
+                legend=dict(orientation="h", y=1.12), height=380, margin=dict(l=20, r=20, t=30, b=20))
+            st.plotly_chart(figs, use_container_width=True)
+
+            unidad = var_sel.split("(")[1].rstrip(")")
+            for col, (n, p) in zip(st.columns(len(tendencias)), tendencias):
+                col.metric(f"Tendencia: {n}", f"{p:+.2f} {unidad}/década")
+
+            if clave_dest and clave_dest in DESTINOS[destino]:
+                st.caption(f"Referencia: {destino} ≈ {DESTINOS[destino][clave_dest]} {unidad.split('/')[0]} "
+                           f"(valor típico, sin variación apreciable en 20 años; no se grafica para no aplastar la escala).")
+            st.caption("Fuente: NASA POWER (promedio anual de datos mensuales, comunidad RE). Los años sin al menos 6 meses de datos se omiten.")
+
         st.subheader("Perfiles más parecidos")
         pool = {n: sc_refs[n] for n in REFS}
         con_escaneo = False
