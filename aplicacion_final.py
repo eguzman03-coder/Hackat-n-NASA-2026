@@ -45,6 +45,9 @@ img_logo = get_base64("logo_nasa.png")
 linear-gradient(rgba(5, 5, 5, 0.35), rgba(5, 5, 5, 0.5))
 st.set_page_config(page_title="Compatibilidad Espacial | NASA", page_icon="logo_nasa.png", layout="wide")
 
+st.sidebar.write("fondo encontrado:", bool(img_fondo))
+st.sidebar.write("archivos:", os.listdir("."))
+
 st.markdown(
     f"""
     <style>
